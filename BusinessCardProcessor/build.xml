@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project> <!-- <<< <<< silences an XML warning -->
+<project name="BusinessCardProcesor" default="jar" basedir=".">
+	<description>
+		Converts raw OCR'd business card text into data records
+	</description>
+
+	<property name="src" location="src" />
+	<property name="build" location="build" />
+	<property name="target" location="target" />
+
+	<target name="init">
+		<!-- Create the time stamp -->
+		<tstamp />
+		<mkdir dir="${build}" />
+	</target>
+
+	<target name="compile" depends="init" description="compile the source">
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac srcdir="${src}" destdir="${build}" />
+	</target>
+
+	<target name="jar" depends="compile" description="generate the distribution">
+		<mkdir dir="${target}/lib" />
+
+		<jar jarfile="${target}/lib/bcp-${DSTAMP}.jar" basedir="${build}">
+			<manifest>
+				<attribute name="Main-Class" value="org.example.bcp.BusinessCardProcessor" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean" description="clean up">
+		<delete dir="${build}" />
+		<delete dir="${target}" />
+	</target>
+</project>
