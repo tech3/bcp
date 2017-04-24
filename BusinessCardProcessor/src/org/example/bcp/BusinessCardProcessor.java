@@ -12,14 +12,18 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.Properties;
 
 /**
- * Main method lives here. This classes manages overall inputs, b-card
+ * Main method lives here. This class manages overall inputs, b-card
  * processing logic and outputs.
  * 
  * Mostly the thing to know is that this program watches a directory to see if
  * new raw data files ever appear there. If they do, then each one is treated as
  * a single business-card's data and data is extracted from it.
+ * 
+ * When running, a properties file must be provided on the command line. That file must
+ * contain the properties 'bcp.rawdata.dir', 'bcp.processed.dir' and 'bcp.failed.dir'.
  * @author astein
  *
  */
@@ -27,29 +31,83 @@ public class BusinessCardProcessor {
 	
 	BusinessCardParser cardParser;
 	
-	Path watchDir;
-	Path processedDir;
-	Path failedDir;
+	static Path watchDir;
+	static final String rawDirKey = "bcp.rawdata.dir";
+	
+	static Path processedDir;
+	static final String processedDirKey = "bcp.processed.dir";
+	
+	static Path failedDir;
+	static final String failedDirKey = "bcp.failed.dir";
+	
+	Properties props;
 
-	public static void main(String[] args) throws FileNotFoundException, IOException {
+	public BusinessCardProcessor(Properties props) {
+		this.props = props;
+		this.cardParser = new BusinessCardParser(this.props);
+	}
+
+	public static void main(String[] args) throws FileNotFoundException, IOException, RecordProcessingException {
 		if (args.length < 1) {
-			System.err.println("Please provide a directory where raw business card data files will be stored.");
+			System.err.println("Please provide a properties file argument.");
 			return;
 		}
 		
 		if (args.length > 1) {
-			System.err.println("Too many arguments.\nPlease provide a directory where raw business card data files will be stored.");
+			System.err.println("Too many arguments.\nPlease provide a properties file.");
 			return;
 		}
+		Properties props = PropertiesLoader.loadProperties(args[0]);
+		doInit(props);
 		
-		if (!Files.isDirectory(Paths.get(args[0]))) {
-			System.err.println("Provided path argument is not a directory.");
-			return;
+		BusinessCardProcessor bcp = new BusinessCardProcessor(props);
+		
+		bcp.doProcessing();
+	}
+	
+	/**
+	 * Any startup tasks. Mostly directory checking. Missing properties get checked for as
+	 * a side effect.
+	 * @param props
+	 * @throws IOException 
+	 * @throws RecordProcessingException 
+	 */
+	private static void doInit(Properties props) throws IOException, RecordProcessingException {
+		// are properties present?
+		if (props.get(rawDirKey) == null) {
+			throw new RecordProcessingException("properties file missing the '" + rawDirKey + "' property");
+		}
+		if (props.get(processedDirKey) == null) {
+			throw new RecordProcessingException("properties file missing the '" + processedDirKey + "' property");
+		}
+		if (props.get(failedDirKey) == null) {
+			throw new RecordProcessingException("properties file missing the '" + failedDirKey + "' property");
 		}
 		
-		BusinessCardProcessor bcp = new BusinessCardProcessor();
+		// create/check perms on any directories needed
+		watchDir = Paths.get((String)props.get(rawDirKey));
+		if (!Files.exists(watchDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(watchDir);
+		}
+		if (!Files.isReadable(watchDir)) {
+			throw new RecordProcessingException("unable to read from raw data directory '" + watchDir + "'");
+		}
 		
-		bcp.doProcessing(args[0]);
+		processedDir = Paths.get((String)props.get(processedDirKey));
+		if (!Files.exists(processedDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(processedDir);
+		}
+		if (!Files.isWritable(processedDir)) {
+			throw new RecordProcessingException("unable to write to raw data directory '" + processedDir + "'");
+		}
+		
+		failedDir = Paths.get((String)props.get(failedDirKey));
+		if (!Files.exists(failedDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(failedDir);
+		}
+		if (!Files.isWritable(failedDir)) {
+			throw new RecordProcessingException("unable to write to raw data directory '" + failedDir + "'");
+		}
 	}
 
 	/**
@@ -58,14 +116,13 @@ public class BusinessCardProcessor {
 	 * @param rawDataPath
 	 * @throws IOException
 	 */
-	private void doProcessing(String rawDataPath) throws IOException {
+	private void doProcessing() throws IOException {
 		// WatchService management code cribbed (but then heavily
 		// modified) from an example at
 		// http://www.codejava.net/java-se/file-io/file-change-notification-example-with-watch-service-api
 		
 		WatchService watch = FileSystems.getDefault().newWatchService();
-		Path dir = Paths.get(rawDataPath);
-		dir.register(watch, StandardWatchEventKinds.ENTRY_CREATE);
+		watchDir.register(watch, StandardWatchEventKinds.ENTRY_CREATE);
 		
 		while (true) {
 			WatchKey watchKey;
@@ -84,7 +141,7 @@ public class BusinessCardProcessor {
 				// get file name
 				@SuppressWarnings("unchecked")
 				WatchEvent<Path> ev = (WatchEvent<Path>) event;
-				Path fileName = dir.resolve(ev.context());
+				Path fileName = watchDir.resolve(ev.context());
 
 				if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
 					System.out.println("processing file: " + fileName);

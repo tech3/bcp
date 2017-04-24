@@ -1,5 +1,7 @@
 package org.example.bcp;
 
+import java.util.Properties;
+
 /**
  * Converts the raw text from machine-read business cards into structured data.
  * @author astein
@@ -7,6 +9,12 @@ package org.example.bcp;
  */
 public class BusinessCardParser {
 	
+	Properties props;
+	
+	public BusinessCardParser(Properties props) {
+		this.props = props;
+	}
+
 	/**
 	 * Main entry point to access this class's conversion functionality.
 	 * @param document The raw text of a business card. The only formatting requirement
@@ -15,6 +23,6 @@ public class BusinessCardParser {
 	 * @return A ContactInfo instance containing the parsed data.
 	 */
 	public ContactInfo getContactInfo(String document) throws RecordProcessingException {
-		return null;
+		return new ContactInfo(null, null, null);
 	}
 }

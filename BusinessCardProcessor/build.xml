@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE project> <!-- <<< <<< silences an XML warning -->
+
 <project name="BusinessCardProcesor" default="jar" basedir=".">
 	<description>
 		Converts raw OCR'd business card text into data records
@@ -10,17 +11,19 @@
 	<property name="target" location="target" />
 
 	<target name="init">
-		<!-- Create the time stamp -->
+		<!-- create the time stamp -->
 		<tstamp />
 		<mkdir dir="${build}" />
 	</target>
+	
+	<target name="copy-resources" depends="init">
+	</target>
 
 	<target name="compile" depends="init" description="compile the source">
-		<!-- Compile the java code from ${src} into ${build} -->
 		<javac srcdir="${src}" destdir="${build}" />
 	</target>
 
-	<target name="jar" depends="compile" description="generate the distribution">
+	<target name="jar" depends="compile,copy-resources" description="generate the binary as a runnable jar">
 		<mkdir dir="${target}/lib" />
 
 		<jar jarfile="${target}/lib/bcp-${DSTAMP}.jar" basedir="${build}">
