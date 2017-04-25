@@ -15,5 +15,5 @@ public interface FieldExtractor {
 	 * @return the index of the element that contains the data of the desired type
 	 * @throws RecordProcessingException 
 	 */
-	public int getField(List<String> ocrRecord) throws RecordProcessingException;
+	public String getField(List<String> ocrRecord) throws RecordProcessingException;
 }

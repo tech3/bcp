@@ -20,10 +20,12 @@ public class NameExtractor implements FieldExtractor {
 
 	NameDatabase nameDatabase;
 	
-	// will help to resolve some kinds of ambiguity
-	String [] companyIndicatorsArr = { "LLC", "LLC.", "INC", "INC.", "CORP", "CORP.", "CORPORATION", "CO", "CO." };
-	String [] addressIndicatorsArr = { "Drive", "LLC.", "INC", "INC.", "CORP", "CORP.", "CORPORATION", "CO", "CO." };
-	Set<String> killSet;
+	// will help to resolve some kinds of ambiguity (i.e. where person names appear in
+	// company names, such as "Arthur Anderson Corp"
+	// TODO externalize this listing so we can add cases
+	String [] companyIndicatorsArr = { "LLC", "LLC.", "INC", "INC.", "CORP", "CORP.",
+			"CORPORATION", "CO", "CO.", "ASSOCIATES", "CONSULTING" };
+	Set<String> companyIndicators;
 	
 	public NameExtractor() throws FileNotFoundException, IOException {
 		nameDatabase = new NameDatabase();
@@ -34,39 +36,62 @@ public class NameExtractor implements FieldExtractor {
 			System.out.println("did not find all other names");
 		}
 		
-		killSet = new HashSet<String>(Arrays.asList(companyIndicatorsArr));
+		companyIndicators = new HashSet<String>(Arrays.asList(companyIndicatorsArr));
 	}
 
 	@Override
-	public int getField(List<String> fieldSet) throws RecordProcessingException {
+	public String getField(List<String> fieldSet) throws RecordProcessingException {
 		List<Integer> nameFieldIndexes = new ArrayList<Integer>();
 		int i = 0;
 		for (String s : fieldSet) {
-			if (isNameProbably(s)) {
+			if (isNameProbably(s) && !isCorpProbably(s) && !isAddressProbably(s)) {
 				nameFieldIndexes.add(i);
 			}
 			i++;
 		}
 		
 		if (nameFieldIndexes.size() == 1) {
-			return nameFieldIndexes.get(0);
-		}
-		
-		if (nameFieldIndexes.size() < 1) {
+			return fieldSet.get(nameFieldIndexes.get(0));
+		} else if (nameFieldIndexes.size() < 1) {
 			throw new RecordProcessingException("name extractor could not locate a likely name in the provided data set");
-		}
-		
-		if (nameFieldIndexes.size() > 1) {
-			// try to winnow out company names that looked like person names
-			for (Integer idx : nameFieldIndexes) {
-				if (isCompanyNameProbably(fieldSet.get(idx))) {
-					
-				}
-			}
+		} else { // more than one hit
 			throw new RecordProcessingException("name extractor located multiple likely names in the provided data set");
 		}
-		
-		return 0;
+	}
+
+	/**
+	 * Decides is a string is likely to be a street address. For now, our 
+	 * heuristic is that if it starts with one or more digits then it's
+	 * more likely to be a street address than a person's name.
+	 * 
+	 * This could be strengthened by checking the end of the string for things
+	 * like "Court", "Ct", "Street" and so on.
+	 * @param s
+	 * @return
+	 */
+	private boolean isAddressProbably(String s) {
+		if (s.trim().matches("^\\d+")) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Decides if a string is likely to be a corporation or other business
+	 * entity name. Runs through a listing of typical substrings that indicate a
+	 * corp is being referred to and treats those that end with such substrings as
+	 * probably corp names.
+	 * @param s
+	 * @return
+	 */
+	private boolean isCorpProbably(String s) {
+		String sUpper = s.trim().toUpperCase();
+		for (String corp : companyIndicators) {
+			if (sUpper.endsWith(corp)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -82,23 +107,6 @@ public class NameExtractor implements FieldExtractor {
 		String [] terms = s.split("");
 		for (int i=terms.length-1; i==0; i--) {
 			if (nameDatabase.containsName(terms[i])) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	/**
-	 * Decides if the given field is a the name of a company or business.
-	 * @param s
-	 * @return true if a company name, false otherwise
-	 */
-	private boolean isCompanyNameProbably(String s) {
-		String [] terms = s.split("");
-		for (int i=terms.length-1; i==0; i--) {
-			// company/employer names can contains some common person
-			// names, so try to identify this and remove it
-			if (killSet.contains(terms[i].toUpperCase())) {
 				return true;
 			}
 		}
