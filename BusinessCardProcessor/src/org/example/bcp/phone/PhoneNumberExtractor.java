@@ -20,7 +20,7 @@ public class PhoneNumberExtractor implements FieldExtractor {
 	// the above may be optionally preceded by a sequence of three digits (area code)
 	// random non-digit text before an after the digit sequences is also captured
 	// so it can be inspected to filter out fax numbers
-	Pattern phonePattern = Pattern.compile("(.*)([\\d]{3})*.*([\\d]{3}).*([\\d]{4})(.*)");
+	Pattern phonePattern = Pattern.compile("(.*)([\\d]{3}).*([\\d]{3}).*([\\d]{4})(.*)");
 	
 	String FAX = "FAX";
 	String FACSIMILE = "FACSIMILE"; // archaic, yes. but, so is a fax machine.
@@ -51,10 +51,10 @@ public class PhoneNumberExtractor implements FieldExtractor {
 	 * @return
 	 */
 	private String normalize(Matcher matchedPattern) {
-		if (matchedPattern.group(1) != null && matchedPattern.group(1).compareTo("") != 0) {
-			return matchedPattern.group(1) + matchedPattern.group(2) + matchedPattern.group(3);
+		if (matchedPattern.group(2) != null && matchedPattern.group(2).compareTo("") != 0) {
+			return matchedPattern.group(2) + matchedPattern.group(3) + matchedPattern.group(4);
 		} else {
-			return matchedPattern.group(2) + matchedPattern.group(3);
+			return matchedPattern.group(3) + matchedPattern.group(4);
 		}
 	}
 

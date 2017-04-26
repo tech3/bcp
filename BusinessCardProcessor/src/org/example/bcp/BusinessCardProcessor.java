@@ -32,82 +32,19 @@ public class BusinessCardProcessor {
 	BusinessCardParser cardParser;
 	
 	static Path watchDir;
-	static final String rawDirKey = "bcp.rawdata.dir";
+	static final String RAW_DIR_KEY = "bcp.rawdata.dir";
 	
 	static Path processedDir;
-	static final String processedDirKey = "bcp.processed.dir";
+	static final String PROCESSED_DIR_KEY = "bcp.processed.dir";
 	
 	static Path failedDir;
-	static final String failedDirKey = "bcp.failed.dir";
+	static final String FAILED_DIR_KEY = "bcp.failed.dir";
 	
 	Properties props;
 
-	public BusinessCardProcessor(Properties props) {
+	public BusinessCardProcessor(Properties props) throws FileNotFoundException, IOException, RecordProcessingException {
 		this.props = props;
 		this.cardParser = new BusinessCardParser(this.props);
-	}
-
-	public static void main(String[] args) throws FileNotFoundException, IOException, RecordProcessingException {
-		if (args.length < 1) {
-			System.err.println("Please provide a properties file argument.");
-			return;
-		}
-		
-		if (args.length > 1) {
-			System.err.println("Too many arguments.\nPlease provide a properties file.");
-			return;
-		}
-		Properties props = PropertiesLoader.loadProperties(args[0]);
-		doInit(props);
-		
-		BusinessCardProcessor bcp = new BusinessCardProcessor(props);
-		
-		bcp.doProcessing();
-	}
-	
-	/**
-	 * Any startup tasks. Mostly directory checking. Missing properties get checked for as
-	 * a side effect.
-	 * @param props
-	 * @throws IOException 
-	 * @throws RecordProcessingException 
-	 */
-	private static void doInit(Properties props) throws IOException, RecordProcessingException {
-		// are properties present?
-		if (props.get(rawDirKey) == null) {
-			throw new RecordProcessingException("properties file missing the '" + rawDirKey + "' property");
-		}
-		if (props.get(processedDirKey) == null) {
-			throw new RecordProcessingException("properties file missing the '" + processedDirKey + "' property");
-		}
-		if (props.get(failedDirKey) == null) {
-			throw new RecordProcessingException("properties file missing the '" + failedDirKey + "' property");
-		}
-		
-		// create/check perms on any directories needed
-		watchDir = Paths.get((String)props.get(rawDirKey));
-		if (!Files.exists(watchDir, LinkOption.NOFOLLOW_LINKS)) {
-			Files.createDirectory(watchDir);
-		}
-		if (!Files.isReadable(watchDir)) {
-			throw new RecordProcessingException("unable to read from raw data directory '" + watchDir + "'");
-		}
-		
-		processedDir = Paths.get((String)props.get(processedDirKey));
-		if (!Files.exists(processedDir, LinkOption.NOFOLLOW_LINKS)) {
-			Files.createDirectory(processedDir);
-		}
-		if (!Files.isWritable(processedDir)) {
-			throw new RecordProcessingException("unable to write to raw data directory '" + processedDir + "'");
-		}
-		
-		failedDir = Paths.get((String)props.get(failedDirKey));
-		if (!Files.exists(failedDir, LinkOption.NOFOLLOW_LINKS)) {
-			Files.createDirectory(failedDir);
-		}
-		if (!Files.isWritable(failedDir)) {
-			throw new RecordProcessingException("unable to write to raw data directory '" + failedDir + "'");
-		}
 	}
 
 	/**
@@ -217,13 +154,77 @@ public class BusinessCardProcessor {
 	private void cleanUp(Path file, boolean failed) {
 		try {
 			if (failed) {
-				Files.move(file, failedDir, StandardCopyOption.REPLACE_EXISTING);
+				Files.move(file, failedDir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
 			} else {
-				Files.move(file, processedDir, StandardCopyOption.REPLACE_EXISTING);
+				Files.move(file, processedDir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (IOException e) {
 			System.err.println("unable to clean up file '" + file + "'");
 			e.printStackTrace();
+		}
+	}
+	
+	public static void main(String[] args) throws FileNotFoundException, IOException, RecordProcessingException {
+		if (args.length < 1) {
+			System.err.println("Please provide a properties file argument.");
+			return;
+		}
+		
+		if (args.length > 1) {
+			System.err.println("Too many arguments.\nPlease provide a properties file.");
+			return;
+		}
+		
+		Properties props = PropertiesLoader.loadProperties(args[0]);
+		doInit(props);
+		
+		BusinessCardProcessor bcp = new BusinessCardProcessor(props);
+		
+		bcp.doProcessing();
+	}
+	
+	/**
+	 * Any startup tasks. Mostly directory checking. Missing properties get checked for as
+	 * a side effect.
+	 * @param props
+	 * @throws IOException 
+	 * @throws RecordProcessingException 
+	 */
+	private static void doInit(Properties props) throws IOException, RecordProcessingException {
+		// are properties present?
+		if (props.get(RAW_DIR_KEY) == null) {
+			throw new RecordProcessingException("properties file missing the '" + RAW_DIR_KEY + "' property");
+		}
+		if (props.get(PROCESSED_DIR_KEY) == null) {
+			throw new RecordProcessingException("properties file missing the '" + PROCESSED_DIR_KEY + "' property");
+		}
+		if (props.get(FAILED_DIR_KEY) == null) {
+			throw new RecordProcessingException("properties file missing the '" + FAILED_DIR_KEY + "' property");
+		}
+		
+		// create/check perms on any directories needed
+		watchDir = Paths.get((String)props.get(RAW_DIR_KEY));
+		if (!Files.exists(watchDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(watchDir);
+		}
+		if (!Files.isReadable(watchDir)) {
+			throw new RecordProcessingException("unable to read from raw data directory '" + watchDir + "'");
+		}
+		
+		processedDir = Paths.get((String)props.get(PROCESSED_DIR_KEY));
+		if (!Files.exists(processedDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(processedDir);
+		}
+		if (!Files.isWritable(processedDir)) {
+			throw new RecordProcessingException("unable to write to raw data directory '" + processedDir + "'");
+		}
+		
+		failedDir = Paths.get((String)props.get(FAILED_DIR_KEY));
+		if (!Files.exists(failedDir, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createDirectory(failedDir);
+		}
+		if (!Files.isWritable(failedDir)) {
+			throw new RecordProcessingException("unable to write to raw data directory '" + failedDir + "'");
 		}
 	}
 }
