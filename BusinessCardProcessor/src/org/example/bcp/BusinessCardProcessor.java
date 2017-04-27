@@ -2,6 +2,7 @@ package org.example.bcp;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -13,6 +14,7 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 /**
  * Main method lives here. This class manages overall inputs, b-card
@@ -30,6 +32,8 @@ import java.util.Properties;
 public class BusinessCardProcessor {
 	
 	BusinessCardParser cardParser;
+	
+	static final String DEFAULT_PROPS_FILE = "bcp.properties";
 	
 	static Path watchDir;
 	static final String RAW_DIR_KEY = "bcp.rawdata.dir";
@@ -54,17 +58,23 @@ public class BusinessCardProcessor {
 	 * @throws IOException
 	 */
 	private void doProcessing() throws IOException {
+		// process any files that are already waiting in the watched dir
+		catchUp();
+		
+		// *************************
+		// race condition lives here
+		// *************************
+		
 		// WatchService management code cribbed (but then heavily
 		// modified) from an example at
 		// http://www.codejava.net/java-se/file-io/file-change-notification-example-with-watch-service-api
-		
 		WatchService watch = FileSystems.getDefault().newWatchService();
 		watchDir.register(watch, StandardWatchEventKinds.ENTRY_CREATE);
 		
 		while (true) {
 			WatchKey watchKey;
 			try {
-				// wait for directory events
+				// block on directory events
 				watchKey = watch.take();
 			} catch (InterruptedException ex) {
 				System.out.println("got interrupt, stopping work...");
@@ -81,7 +91,7 @@ public class BusinessCardProcessor {
 				Path fileName = watchDir.resolve(ev.context());
 
 				if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-					System.out.println("processing file: " + fileName);
+					System.out.println("processing file: " + fileName + "\n");
 					if (!Files.isDirectory(fileName, LinkOption.NOFOLLOW_LINKS) &&
 						!Files.isSymbolicLink(fileName)) {
 						processFile(fileName);
@@ -91,7 +101,7 @@ public class BusinessCardProcessor {
 					}
 
 				} else {
-					System.err.println("got an unexpected");
+					System.err.println("got an unexpected watch event");
 				}
 			}
 
@@ -102,6 +112,19 @@ public class BusinessCardProcessor {
 		}
 	}
 	
+	/**
+	 * Processes all of the (regular) files in the watched directory
+	 * @throws IOException
+	 */
+	private void catchUp() throws IOException {
+		try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(watchDir, Files::isRegularFile)) {
+			for (Path file : dirStream) {
+				System.out.println("processing file: " + file + "\n");
+				processFile(file);
+			}
+		}
+	}
+
 	/**
 	 * Processes a single raw data file to produce some structured contact info.
 	 * *** NOTE *** This method intentionally swallows exceptions raised due to file I/O problems and data
@@ -165,21 +188,24 @@ public class BusinessCardProcessor {
 	}
 	
 	public static void main(String[] args) throws FileNotFoundException, IOException, RecordProcessingException {
-		if (args.length < 1) {
-			System.err.println("Please provide a properties file argument.");
-			return;
-		}
-		
 		if (args.length > 1) {
-			System.err.println("Too many arguments.\nPlease provide a properties file.");
+			System.err.println("Too many arguments. Please provide a properties file.");
 			return;
 		}
 		
-		Properties props = PropertiesLoader.loadProperties(args[0]);
+		// optionally allow one to specify a different properties file (new file
+		// still needs to be (re)packaged in the runnable jar though)
+		String propsFile = DEFAULT_PROPS_FILE;
+		if (args.length == 1) {
+			propsFile = args[0];
+		}
+		
+		Properties props = PropertiesLoader.loadProperties("/" + propsFile);
 		doInit(props);
 		
 		BusinessCardProcessor bcp = new BusinessCardProcessor(props);
 		
+		// kick off the main loop
 		bcp.doProcessing();
 	}
 	
