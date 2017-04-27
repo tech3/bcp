@@ -28,9 +28,9 @@
 	</target>
 
 	<target name="jar" depends="compile,copy-resources" description="generate the binary as a runnable jar">
-		<mkdir dir="${target}/lib" />
+		<mkdir dir="${target}" />
 
-		<jar jarfile="${target}/lib/bcp-${DSTAMP}.jar" basedir="${build}">
+		<jar jarfile="${target}/bcp.jar" basedir="${build}">
 			<manifest>
 				<attribute name="Main-Class" value="org.example.bcp.BusinessCardProcessor" />
 			</manifest>
