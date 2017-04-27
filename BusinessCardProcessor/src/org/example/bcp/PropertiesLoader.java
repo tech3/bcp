@@ -31,7 +31,6 @@ public class PropertiesLoader {
 	public static Properties loadProperties(String propertiesFile) throws IOException {
 		// load base properties
 		Properties props = new Properties();
-//		InputStream is = new FileInputStream(propertiesFile);
 		InputStream is = PropertiesLoader.class.getResourceAsStream(propertiesFile);
 		props.load(is);
 		is.close();
@@ -41,7 +40,6 @@ public class PropertiesLoader {
 		for (Object key : props.keySet()) {
 			if (((String)key).startsWith(extractorPrefix)) {
 				Properties exProps = new Properties();
-//				InputStream exis = new FileInputStream((String)props.get(key));
 				InputStream exis = PropertiesLoader.class.getResourceAsStream("/"+(String)props.get(key));
 				exProps.load(exis);
 				tmp.put((String)key, exProps);
