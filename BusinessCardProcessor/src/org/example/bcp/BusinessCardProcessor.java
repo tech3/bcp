@@ -14,7 +14,6 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Properties;
-import java.util.stream.Stream;
 
 /**
  * Main method lives here. This class manages overall inputs, b-card
