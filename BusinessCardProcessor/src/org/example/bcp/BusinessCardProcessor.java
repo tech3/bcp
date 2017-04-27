@@ -71,6 +71,8 @@ public class BusinessCardProcessor {
 		WatchService watch = FileSystems.getDefault().newWatchService();
 		watchDir.register(watch, StandardWatchEventKinds.ENTRY_CREATE);
 		
+		System.out.println("watching directory '" + watchDir + "' for new business cards to process...\n");
+		
 		while (true) {
 			WatchKey watchKey;
 			try {
