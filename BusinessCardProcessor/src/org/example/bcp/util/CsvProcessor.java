@@ -24,7 +24,8 @@ public class CsvProcessor implements Iterable<List<String>>, Iterator<List<Strin
 	/**
 	 * Breaks a line of text into its comma-delimited elements.
 	 * At this time, this parser does not account for escaped (i.e. double-quote-wrapped) CSV fields.
-	 * @param line
+	 * @param csvLine
+	 * @return
 	 */
 	public static List<String> parseCsvLine(String csvLine) {
 		return Arrays.asList(csvLine.split(","));

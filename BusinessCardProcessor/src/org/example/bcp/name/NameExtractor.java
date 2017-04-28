@@ -12,7 +12,9 @@ import org.example.bcp.FieldExtractor;
 import org.example.bcp.RecordProcessingException;
 
 /**
- * A field extractor that finds things that look like names.
+ * A field extractor that finds things that look like names. Mainly this is done by
+ * performing lookups against a names database. When more than one potential name is
+ * present, a ranking-based approach is used to choose among them.
  * @author astein
  *
  */
@@ -26,7 +28,7 @@ public class NameExtractor implements FieldExtractor {
 	public static final String DBFILE_PROPERTY_KEY = "names.db.file";
 	
 	// will help to resolve some kinds of ambiguity (i.e. where person names appear in
-	// company names, such as "Arthur Anderson Corp"
+	// company names, such as "Arthur Anderson Corp")
 	// TODO externalize this listing so we can add cases
 	String [] companyIndicatorsArr = { "LLC", "LLC.", "INC", "INC.", "CORP", "CORP.",
 			"CORPORATION", "CO", "CO.", "ASSOCIATES", "CONSULTING", "TECH", "GLOBOCORP" };
@@ -78,11 +80,18 @@ public class NameExtractor implements FieldExtractor {
 		int index = 0;
 		int chosenIndex = -1;
 		int rank = Integer.MAX_VALUE;
+		boolean alreadyWarned = false;
+		
+		// get a likelihood-of-being-a-person-name-ranking for each field,
+		// go with the lowest value (lower means more-likely)
 		for (String field : fieldSet) {
 			int tmpRank = getNameRank(field);
 			if (tmpRank > 0 && !isCorpProbably(field) && !isAddressProbably(field)) {
-				if (rank < Integer.MAX_VALUE) {
+				// if rank has already been assigned, then some previous field must have come
+				// up as a likely name already, so we'll need to resolve some ambiguity 
+				if (rank < Integer.MAX_VALUE && !alreadyWarned) {
 					System.out.println("WARNING: got more than one potential person name, going to have to choose");
+					alreadyWarned = true;
 				}
 				
 				// if new ranking is lower, then use it
@@ -109,7 +118,7 @@ public class NameExtractor implements FieldExtractor {
 	 * This could be strengthened by checking the end of the string for things
 	 * like "Court", "Ct", "Street" and so on.
 	 * @param s
-	 * @return
+	 * @return true if probably an address
 	 */
 	private boolean isAddressProbably(String s) {
 		if (s.trim().matches("^\\d+")) {
@@ -124,7 +133,7 @@ public class NameExtractor implements FieldExtractor {
 	 * corp is being referred to and treats those that end with such substrings as
 	 * probable corp names.
 	 * @param s
-	 * @return
+	 * @return true if probably a corporation name
 	 */
 	private boolean isCorpProbably(String s) {
 		String sUpper = s.trim().toUpperCase();
@@ -142,18 +151,18 @@ public class NameExtractor implements FieldExtractor {
 	 * 
 	 * For the moment, we use the last-name most->least common ranking values from our
 	 * names database to provide the rank value. This is really not the best heuristic,
-	 * as the database ranks according to frequency, which is not the same as nameiness.
-	 * Could probably improve on this if we had first names too.
+	 * as the database ranks according to frequency, which is not the same as name-i-ness.
+	 * Could definitely improve on this if we had first names too.
 	 * 
 	 * Split the field into whitespace- and hyphen-delimited terms and looks to
 	 * see if each term is in our names database.
 	 * Since our names database is actually surnames, we search the list of
 	 * terms in reverse order to save a little time.
-	 * @param s
-	 * @return true if this is likely a person name, false otherwise
+	 * @param maybeName
+	 * @return an integer ranking for the provided name
 	 */
-	private int getNameRank(String s) {
-		String [] terms = s.split("\\s+|-");
+	private int getNameRank(String maybeName) {
+		String [] terms = maybeName.split("\\s+|-");
 		for (int i=terms.length-1; i>=0; i--) {
 			if (nameDatabase.containsName(terms[i])) {
 				// the first hit will produce our rank value
@@ -163,5 +172,4 @@ public class NameExtractor implements FieldExtractor {
 		return -1;
 	}
 	
-//	private String highestRanking()
 }

@@ -39,7 +39,8 @@ public class BusinessCardParser {
 	 * @param document The raw text of a business card. The only formatting requirement
 	 * for this parameter is that each element of information (e.g. name, email...) be
 	 * on a separate line (i.e separated by carriage return or CRLF)
-	 * @return A ContactInfo instance containing the parsed, normalized data.
+	 * @return a ContactInfo instance containing the parsed, normalized data.
+	 * @throws RecordProcessingException
 	 */
 	public ContactInfo getContactInfo(String document) throws RecordProcessingException {
 		List<String> lines = splitLines(document);
@@ -47,6 +48,7 @@ public class BusinessCardParser {
 		String name = nameEx.getField(lines);
 		String phone = phoneEx.getField(lines);
 		String email = emailEx.getField(lines);
+		// extractors can be added here
 		
 		return new ContactInfo(name, phone, email);
 	}

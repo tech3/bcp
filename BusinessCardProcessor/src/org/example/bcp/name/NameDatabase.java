@@ -40,7 +40,7 @@ public class NameDatabase {
 	}
 	
 	/**
-	 * Inits the database.
+	 * Includes processing to init the database from the file
 	 * @param databaseFile
 	 * @throws FileNotFoundException
 	 * @throws IOException

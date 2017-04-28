@@ -33,6 +33,7 @@ HOW TO RUN
 6. A text file will be produced, named "contact-data.txt". For each file processed,
    the contents of each text file will be listed, followed by a some formatted
    output of the structured data record that has been extracted by the program.
+   This file will continue to grow over time as more raw files are processed.
 7. Processed files will be copied to either <bcp-home>/processed_cards or
    <bcp-home>/failed_cards, depending on the outcome of being processed.
 8. The program can be terminated by typing Ctrl-C on the command line.

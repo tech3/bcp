@@ -16,8 +16,6 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Properties;
 
-import javax.management.openmbean.OpenMBeanOperationInfoSupport;
-
 /**
  * Main method lives here. This class manages overall inputs, b-card
  * processing logic and outputs.
@@ -59,7 +57,6 @@ public class BusinessCardProcessor {
 	/**
 	 * Main processing loop. Watches a directory for files that contain newly-OCR'd, raw
 	 * business card text files and processes each one in turn.
-	 * @param rawDataPath
 	 * @throws IOException
 	 */
 	private void doProcessing() throws IOException {
@@ -137,7 +134,7 @@ public class BusinessCardProcessor {
 	 * *** NOTE *** This method intentionally swallows exceptions raised due to file I/O problems and data
 	 * processing problems! We don't want such exceptions to bring down the application, so they're stopped
 	 * at this level. Errors will be reported to STDERR and processing will be allowed to resume.
-	 * @param file
+	 * @param file the file to be processed
 	 */
 	private void processFile(Path file) {
 		String rawData;
