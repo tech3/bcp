@@ -18,7 +18,7 @@ public class EmailExtractor implements FieldExtractor {
 	// the W3C spec. just any text, followed by an '@', followed by text
 	// containing at least one '.'
 	// should prevent @twitter handles from matching
-	Pattern emailPattern = Pattern.compile(".+@.+\\..+");
+	Pattern emailPattern = Pattern.compile("\\S+@\\S+\\.\\S+");
 
 	@Override
 	public String getField(List<String> ocrRecord) throws RecordProcessingException {
