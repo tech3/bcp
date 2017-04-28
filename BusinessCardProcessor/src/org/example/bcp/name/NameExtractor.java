@@ -82,7 +82,7 @@ public class NameExtractor implements FieldExtractor {
 			int tmpRank = getNameRank(field);
 			if (tmpRank > 0 && !isCorpProbably(field) && !isAddressProbably(field)) {
 				if (rank < Integer.MAX_VALUE) {
-					System.out.println("WARNING: got more than one potential person names, going to have to choose");
+					System.out.println("WARNING: got more than one potential person name, going to have to choose");
 				}
 				
 				// if new ranking is lower, then use it

@@ -9,11 +9,14 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Properties;
+
+import javax.management.openmbean.OpenMBeanOperationInfoSupport;
 
 /**
  * Main method lives here. This class manages overall inputs, b-card
@@ -42,6 +45,9 @@ public class BusinessCardProcessor {
 	
 	static Path failedDir;
 	static final String FAILED_DIR_KEY = "bcp.failed.dir";
+	
+	static Path outputFile;
+	static final String OUTPUT_FILE_KEY = "bcp.output.file";
 	
 	Properties props;
 
@@ -92,7 +98,7 @@ public class BusinessCardProcessor {
 				Path fileName = watchDir.resolve(ev.context());
 
 				if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-					System.out.println("processing file: " + fileName + "\n");
+					System.out.println("processing file: " + fileName);
 					if (!Files.isDirectory(fileName, LinkOption.NOFOLLOW_LINKS) &&
 						!Files.isSymbolicLink(fileName)) {
 						processFile(fileName);
@@ -153,6 +159,11 @@ public class BusinessCardProcessor {
 			e.printStackTrace();
 			cleanUp(file, true);
 			return;
+		} catch (IOException e) {
+			System.err.println("unable to write to output file '" + outputFile + "', due to error: '" + e.getMessage() + "'");
+			e.printStackTrace();
+			cleanUp(file, true);
+			return;
 		}
 		
 		cleanUp(file, false);
@@ -163,10 +174,12 @@ public class BusinessCardProcessor {
 	 * Currently, this is just printing the data to the console.
 	 * @param rawData original text data
 	 * @param info structured extracted contact info
+	 * @throws IOException 
 	 */
-	private void handleContactInfo(String rawData, ContactInfo info) {
-		System.out.println(rawData + "\n\n==>\n\n" + info.prettyPrint() + "\n\n");
-		
+	private void handleContactInfo(String rawData, ContactInfo info) throws IOException {
+		String separator = "====================================";
+		String output = separator + "\n\n" + rawData + "\n\n==>\n\n" + info.prettyPrint() + "\n\n";
+		Files.write(outputFile, output.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 		// TODO combine raw data and structured info into a data record and store in contacts DB
 	}
 	
@@ -228,6 +241,9 @@ public class BusinessCardProcessor {
 		if (props.get(FAILED_DIR_KEY) == null) {
 			throw new RecordProcessingException("properties file missing the '" + FAILED_DIR_KEY + "' property");
 		}
+		if (props.get(OUTPUT_FILE_KEY) == null) {
+			throw new RecordProcessingException("properties file missing the '" + OUTPUT_FILE_KEY + "' property");
+		}
 		
 		// create/check perms on any directories needed
 		watchDir = Paths.get((String)props.get(RAW_DIR_KEY));
@@ -253,5 +269,7 @@ public class BusinessCardProcessor {
 		if (!Files.isWritable(failedDir)) {
 			throw new RecordProcessingException("unable to write to raw data directory '" + failedDir + "'");
 		}
+		
+		outputFile = Paths.get((String)props.get(OUTPUT_FILE_KEY));
 	}
 }

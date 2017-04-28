@@ -29,9 +29,10 @@ HOW TO RUN
    say that it's watching a directory for new data and then not do much more.
 4. Give the program some data. Copy the text files from BusinessCardProcessor/bcards
    into <bcp-home>/new_bcards
-5. The program will go into action and produce a text output to the screen. The
-   contents of each text file will be listed, followed by a some formatted output
-   of the structured data record that has been extracted by the program.
-6. Processed files will be copied to either <bcp-home>/processed_cards or
+5. The program will go into action and process the files.
+6. A text file will be produced, named "contact-data.txt". For each file processed,
+   the contents of each text file will be listed, followed by a some formatted
+   output of the structured data record that has been extracted by the program.
+7. Processed files will be copied to either <bcp-home>/processed_cards or
    <bcp-home>/failed_cards, depending on the outcome of being processed.
-7. The program can be terminated by typing Ctrl-C on the command line.
+8. The program can be terminated by typing Ctrl-C on the command line.
