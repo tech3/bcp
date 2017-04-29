@@ -14,12 +14,12 @@ import org.example.bcp.RecordProcessingException;
  */
 public class PhoneNumberExtractor implements FieldExtractor {
 
-	// a regex pattern that finds matches a variety of phone number patterns
-	// at the very least, the string must contain a sequence of three digits
-	// followed by a sequence of four digits
-	// the above may be optionally preceded by a sequence of three digits (area code)
-	// random non-digit text before an after the digit sequences is also captured
-	// so it can be inspected to filter out fax numbers
+	// a regex pattern that finds phone numbers
+	// at the very least, the text must contain two sequences of three digits
+	// followed by a sequence of four digits. the sequences may be separated,
+	// preceded and followed by virtually anything.
+	// we also capture () pretty much everything so we can inspect it for clues
+	// as to whether this is a fax number or not.
 	Pattern phonePattern = Pattern.compile("(.*)([\\d]{3}).*([\\d]{3}).*([\\d]{4})(.*)");
 	
 	String FAX = "FAX";
